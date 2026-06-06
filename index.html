@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rhônexpress — Achat de billets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rx-red:#C8102E;
+    --rx-red-dark:#A30D26;
+    --rx-blue:#0066CC;
+    --ink:#1E1B2E;
+    --ink-soft:#52506A;
+    --line:#E6E5ED;
+    --bg:#F4F4F7;
+    --card:#FFFFFF;
+    --green:#1E9E5A;
+    --radius:18px;
+    --shadow:0 6px 24px rgba(30,27,46,.08);
+    --shadow-lg:0 14px 44px rgba(30,27,46,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Sora',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.45;
+    overscroll-behavior:none;
+  }
+  /* phone frame for desktop preview; full-bleed on mobile */
+  .app{
+    max-width:430px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--card);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 0 60px rgba(0,0,0,.06);
+  }
+
+  /* ---------- HEADER ---------- */
+  header.top{
+    position:sticky;top:0;z-index:40;
+    background:#fff;
+    border-bottom:1px solid var(--line);
+    padding:14px 18px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .logo{font-weight:800;font-size:18px;letter-spacing:-.02em;display:flex;align-items:center;gap:2px}
+  .logo .r{color:var(--ink)}
+  .logo .x{color:var(--rx-red)}
+  .logo small{display:block;font-size:9px;letter-spacing:.18em;color:var(--ink-soft);font-weight:600;margin-top:-2px}
+  .top .cart{
+    margin-left:auto;position:relative;width:42px;height:42px;border-radius:12px;
+    background:var(--bg);display:grid;place-items:center;border:none;cursor:pointer;
+  }
+  .top .cart svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2}
+  .top .cart .badge{
+    position:absolute;top:-5px;right:-5px;background:var(--rx-red);color:#fff;
+    font-size:11px;font-weight:700;min-width:19px;height:19px;border-radius:10px;
+    display:grid;place-items:center;padding:0 4px;
+  }
+
+  /* ---------- STEPPER ---------- */
+  .stepper{display:flex;align-items:center;gap:6px;padding:16px 18px 4px}
+  .stepper .seg{flex:1;display:flex;align-items:center;gap:6px}
+  .stepper .dot{
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;
+    display:grid;place-items:center;font-size:12px;font-weight:700;
+    background:var(--line);color:var(--ink-soft);transition:.3s;
+  }
+  .stepper .seg.active .dot{background:var(--rx-red);color:#fff;box-shadow:0 4px 12px rgba(200,16,46,.35)}
+  .stepper .seg.done .dot{background:var(--green);color:#fff}
+  .stepper .bar{flex:1;height:3px;border-radius:3px;background:var(--line);transition:.3s}
+  .stepper .seg.done .bar,.stepper .seg.active .bar{background:var(--rx-red)}
+  .step-labels{display:flex;justify-content:space-between;padding:0 18px 8px;font-size:11px;color:var(--ink-soft);font-weight:600}
+  .step-labels span{flex:1;text-align:center}
+  .step-labels span:first-child{text-align:left}
+  .step-labels span:last-child{text-align:right}
+
+  /* ---------- SCREENS ---------- */
+  main{flex:1;padding:8px 18px 140px;overflow-y:auto}
+  .screen{display:none;animation:fade .35s ease}
+  .screen.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  h1.title{font-family:'Fraunces',serif;font-size:27px;font-weight:600;letter-spacing:-.01em;margin:14px 0 4px}
+  .subtitle{color:var(--ink-soft);font-size:14px;margin-bottom:18px}
+
+  /* ---------- PROFILE CHOICE (step 1a) ---------- */
+  .seg-control{
+    display:flex;background:var(--bg);border-radius:14px;padding:5px;gap:4px;margin-bottom:20px;
+  }
+  .seg-control button{
+    flex:1;border:none;background:transparent;padding:11px 6px;border-radius:10px;
+    font-family:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.2s;
+  }
+  .seg-control button.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(30,27,46,.1)}
+
+  .field-label{font-size:13px;font-weight:600;color:var(--ink-soft);margin:18px 0 10px;display:block}
+
+  /* trip-type pills */
+  .pills{display:flex;gap:10px;margin-bottom:8px}
+  .pill{
+    flex:1;border:2px solid var(--line);background:#fff;border-radius:14px;padding:14px 10px;
+    cursor:pointer;transition:.2s;text-align:center;
+  }
+  .pill.active{border-color:var(--rx-red);background:#FFF5F6}
+  .pill .ico{font-size:20px;display:block;margin-bottom:4px}
+  .pill .nm{font-size:13px;font-weight:600}
+
+  /* ---------- TICKET LIST ---------- */
+  .ticket{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;transition:.2s;
+  }
+  .ticket.selected{border-color:var(--rx-red);box-shadow:0 6px 20px rgba(200,16,46,.12)}
+  .ticket .info{flex:1;min-width:0}
+  .ticket .nm{font-weight:600;font-size:15px;line-height:1.25}
+  .ticket .desc{font-size:12px;color:var(--ink-soft);margin-top:3px}
+  .ticket .price{font-weight:700;font-size:16px;margin-top:6px;color:var(--ink)}
+  .ticket .price small{font-weight:500;font-size:12px;color:var(--ink-soft)}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 7px;border-radius:6px;margin-bottom:6px}
+  .tag.best{background:#E9F7EF;color:var(--green)}
+  .tag.young{background:#E7F0FB;color:var(--rx-blue)}
+
+  /* stepper +/- */
+  .qty{display:flex;align-items:center;gap:0;background:var(--bg);border-radius:12px;padding:4px}
+  .qty button{
+    width:34px;height:34px;border:none;border-radius:9px;background:#fff;cursor:pointer;
+    font-size:20px;font-weight:600;color:var(--rx-red);display:grid;place-items:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);transition:.15s;line-height:1;
+  }
+  .qty button:active{transform:scale(.9)}
+  .qty button.minus{color:var(--ink-soft)}
+  .qty button:disabled{opacity:.35;cursor:default}
+  .qty .val{min-width:30px;text-align:center;font-weight:700;font-size:15px}
+
+  /* category filter chips */
+  .cats{display:flex;gap:8px;overflow-x:auto;padding:4px 0 14px;scrollbar-width:none}
+  .cats::-webkit-scrollbar{display:none}
+  .cat{
+    white-space:nowrap;border:1.5px solid var(--line);background:#fff;border-radius:999px;
+    padding:8px 16px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.2s;
+  }
+  .cat.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* ---------- IDENTIFICATION (step 2) ---------- */
+  .input{
+    width:100%;border:1.5px solid var(--line);border-radius:13px;padding:15px 16px;
+    font-family:inherit;font-size:15px;color:var(--ink);background:#fff;transition:.2s;margin-bottom:14px;
+  }
+  .input:focus{outline:none;border-color:var(--rx-blue);box-shadow:0 0 0 3px rgba(0,102,204,.12)}
+  .input::placeholder{color:#A8A6B8}
+  .hint{font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;display:flex;gap:6px;align-items:center}
+  .hint svg{width:14px;height:14px;flex-shrink:0;stroke:var(--green);fill:none;stroke-width:2}
+
+  .check-row{display:flex;gap:11px;align-items:flex-start;padding:14px;background:var(--bg);border-radius:13px;margin-bottom:12px;cursor:pointer}
+  .check-row input{margin-top:2px;width:19px;height:19px;accent-color:var(--rx-red);flex-shrink:0}
+  .check-row label{font-size:13px;color:var(--ink-soft);line-height:1.4;cursor:pointer}
+  .check-row a{color:var(--rx-blue);text-decoration:underline}
+
+  /* ---------- PAYMENT (step 3) ---------- */
+  .pay-method{
+    display:flex;align-items:center;gap:14px;border:2px solid var(--line);
+    border-radius:14px;padding:16px;margin-bottom:12px;cursor:pointer;transition:.2s;background:#fff;
+  }
+  .pay-method.active{border-color:var(--rx-red);background:#FFF5F6}
+  .pay-method .radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;display:grid;place-items:center;transition:.2s}
+  .pay-method.active .radio{border-color:var(--rx-red)}
+  .pay-method.active .radio::after{content:'';width:11px;height:11px;border-radius:50%;background:var(--rx-red)}
+  .pay-method .pm-name{font-weight:600;font-size:15px;flex:1}
+  .pay-method .pm-logos{display:flex;gap:6px;align-items:center}
+  .pay-method .pm-logos img,.pay-method .pm-logos .lg{height:24px}
+
+  /* apple pay express button */
+  .applepay-btn{
+    width:100%;background:#000;color:#fff;border:none;border-radius:14px;
+    height:54px;display:flex;align-items:center;justify-content:center;gap:7px;
+    font-family:-apple-system,'Sora',sans-serif;font-size:18px;font-weight:600;cursor:pointer;
+    margin-bottom:8px;transition:.15s;
+  }
+  .applepay-btn:active{transform:scale(.99);background:#1a1a1a}
+  .applepay-btn .apple{font-size:21px;line-height:1}
+  .gpay-btn{
+    width:100%;background:#000;color:#fff;border:none;border-radius:14px;height:54px;
+    display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:600;cursor:pointer;
+  }
+  .gpay-btn:active{transform:scale(.99)}
+  .express-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--ink-soft);font-size:12px;font-weight:600}
+  .express-divider::before,.express-divider::after{content:'';flex:1;height:1px;background:var(--line)}
+
+  /* order summary card */
+  .summary{background:var(--bg);border-radius:var(--radius);padding:18px;margin:18px 0}
+  .summary-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px;color:var(--ink-soft)}
+  .summary-row .v{color:var(--ink);font-weight:500}
+  .summary-row.total{border-top:1px solid var(--line);padding-top:14px;margin-top:4px;margin-bottom:0;font-size:18px;font-weight:700;color:var(--ink)}
+  .summary-row.total .v{font-weight:800;color:var(--rx-red)}
+
+  /* recap list on payment */
+  .recap-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .recap-item:last-child{border-bottom:none}
+  .recap-item .ri-name{font-weight:600}
+  .recap-item .ri-qty{color:var(--ink-soft);font-size:12px}
+
+  /* empty cart */
+  .empty{text-align:center;padding:50px 20px;color:var(--ink-soft)}
+  .empty .big{font-size:40px;margin-bottom:10px}
+
+  /* ---------- STICKY CTA ---------- */
+  .cta-bar{
+    position:sticky;bottom:0;left:0;right:0;
+    background:rgba(255,255,255,.85);backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+    display:flex;gap:12px;align-items:center;z-index:30;
+  }
+  .cta-total{font-size:13px;color:var(--ink-soft);font-weight:600}
+  .cta-total b{display:block;font-size:21px;color:var(--ink);font-weight:800;letter-spacing:-.01em}
+  .btn{
+    flex:1;border:none;border-radius:14px;padding:16px;font-family:inherit;font-size:16px;font-weight:700;
+    cursor:pointer;transition:.18s;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--rx-red);color:#fff;box-shadow:0 6px 18px rgba(200,16,46,.3)}
+  .btn-primary:disabled{background:#D9B3BA;box-shadow:none;cursor:default}
+  .btn-ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+  /* success */
+  .success-wrap{text-align:center;padding:40px 20px}
+  .success-ring{
+    width:96px;height:96px;border-radius:50%;background:#E9F7EF;display:grid;place-items:center;margin:0 auto 24px;
+    animation:pop .5s cubic-bezier(.2,.9,.3,1.4);
+  }
+  @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+  .success-ring svg{width:48px;height:48px;stroke:var(--green);fill:none;stroke-width:3}
+  .eticket{
+    background:linear-gradient(135deg,var(--rx-red),var(--rx-red-dark));color:#fff;border-radius:var(--radius);
+    padding:22px;margin:22px 0;text-align:left;position:relative;overflow:hidden;
+  }
+  .eticket::after{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}
+  .eticket .et-label{font-size:11px;letter-spacing:.1em;opacity:.8;font-weight:600}
+  .eticket .et-name{font-family:'Fraunces',serif;font-size:22px;margin:4px 0 14px}
+  .eticket .et-route{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}
+  .eticket .et-route .arrow{flex:1;border-top:1.5px dashed rgba(255,255,255,.5);position:relative}
+  .eticket .et-qr{background:#fff;width:90px;height:90px;border-radius:12px;margin-top:16px;display:grid;place-items:center}
+  .eticket .et-qr svg{width:70px;height:70px}
+
+  /* Add to Apple Wallet button */
+  .wallet-btn{
+    width:100%;max-width:300px;margin:4px auto 0;background:#000;color:#fff;border:none;
+    border-radius:13px;height:52px;display:flex;align-items:center;justify-content:center;gap:9px;
+    font-family:-apple-system,'Sora',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:.15s;
+  }
+  .wallet-btn:active{transform:scale(.98);background:#1a1a1a}
+  .wallet-btn svg{width:22px;height:22px}
+  .wallet-done{
+    max-width:300px;margin:4px auto 0;background:#E9F7EF;color:var(--green);
+    border-radius:13px;height:52px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:15px;font-weight:600;
+  }
+  .wallet-done svg{width:18px;height:18px;stroke:var(--green);fill:none;stroke-width:2.5}
+
+  .alert{background:#FDF3D7;border-radius:12px;padding:12px 14px;font-size:13px;color:#8A6D0F;margin-bottom:14px;display:flex;gap:8px}
+
+  /* profile-level notice (above the list) */
+  .notice{
+    display:flex;gap:11px;align-items:flex-start;
+    background:#FFF6E9;border:1px solid #F4D9A8;border-radius:14px;
+    padding:13px 15px;margin:0 0 16px;font-size:13px;color:#7A5A12;line-height:1.4;
+    animation:fade .3s ease;
+  }
+  .notice svg{width:20px;height:20px;flex-shrink:0;stroke:#C8860B;fill:none;stroke-width:2;margin-top:1px}
+  .notice b{color:#5C440D}
+  /* inline notice inside a ticket card (correspondance) */
+  .ticket-note{
+    display:flex;gap:7px;align-items:flex-start;
+    background:#EAF2FB;border-radius:10px;padding:8px 10px;margin-top:8px;
+    font-size:11.5px;color:#0A4C8C;line-height:1.35;
+  }
+  .ticket-note svg{width:14px;height:14px;flex-shrink:0;stroke:#0A4C8C;fill:none;stroke-width:2;margin-top:1px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="top">
+    <div class="logo">
+      <span><span class="r">rhône</span><span class="x">xpress</span></span>
+    </div>
+    <button class="cart" onclick="goCart()">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.4 12.3a1.5 1.5 0 0 0 1.5 1.2h8.5a1.5 1.5 0 0 0 1.5-1.2L22 7H6"/></svg>
+      <span class="badge" id="cartBadge" style="display:none">0</span>
+    </button>
+  </header>
+
+  <!-- STEPPER -->
+  <div class="stepper" id="stepper">
+    <div class="seg active" data-step="1"><div class="dot">1</div><div class="bar"></div></div>
+    <div class="seg" data-step="2"><div class="dot">2</div><div class="bar"></div></div>
+    <div class="seg" data-step="3"><div class="dot">3</div></div>
+  </div>
+  <div class="step-labels">
+    <span>Billets</span><span>Vos infos</span><span>Paiement</span>
+  </div>
+
+  <main>
+    <!-- ============ STEP 1 : SELECTION ============ -->
+    <section class="screen on" id="s1">
+      <h1 class="title">Quel billet aujourd'hui ?</h1>
+      <p class="subtitle">Lyon centre ⇄ Aéroport St-Exupéry · 30 min</p>
+
+      <span class="field-label">Vous êtes</span>
+      <div class="seg-control" id="profile">
+        <button class="active" data-p="standard">Adulte</button>
+        <button data-p="young">12–25 ans</button>
+        <button data-p="salarie">Salarié St-Ex</button>
+        <button data-p="package">Touriste</button>
+      </div>
+
+      <span class="field-label">Type de trajet</span>
+      <div class="pills" id="tripType">
+        <div class="pill active" data-t="all"><span class="ico">✦</span><span class="nm">Tous</span></div>
+        <div class="pill" data-t="aller"><span class="ico">→</span><span class="nm">Aller</span></div>
+        <div class="pill" data-t="ar"><span class="ico">⇄</span><span class="nm">A/R</span></div>
+        <div class="pill" data-t="multi"><span class="ico">⊞</span><span class="nm">Multi</span></div>
+      </div>
+
+      <div id="profileNotice"></div>
+      <div id="ticketList" style="margin-top:18px"></div>
+    </section>
+
+    <!-- ============ STEP 2 : IDENTIFICATION ============ -->
+    <section class="screen" id="s2">
+      <h1 class="title">Vos informations</h1>
+      <p class="subtitle">Pas besoin de compte. On vous envoie le e-billet par mail.</p>
+
+      <input class="input" id="email" type="email" placeholder="Adresse e-mail" autocomplete="email">
+      <div class="hint">
+        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        Votre e-billet arrive ici en quelques secondes
+      </div>
+
+      <input class="input" id="prenom" type="text" placeholder="Prénom" autocomplete="given-name">
+      <input class="input" id="nom" type="text" placeholder="Nom" autocomplete="family-name">
+
+      <label class="check-row">
+        <input type="checkbox" id="cgu">
+        <span>J'accepte les <a href="#">conditions générales de vente</a> et le traitement de mes données personnelles.</span>
+      </label>
+      <label class="check-row">
+        <input type="checkbox" id="newsletter">
+        <span>Je veux recevoir les bons plans Rhônexpress (optionnel).</span>
+      </label>
+    </section>
+
+    <!-- ============ STEP 3 : PAYMENT ============ -->
+    <section class="screen" id="s3">
+      <h1 class="title">Paiement</h1>
+      <p class="subtitle">Réglez en un geste. Connexion sécurisée.</p>
+
+      <!-- express checkout -->
+      <button class="applepay-btn" onclick="payNow('Apple Pay')">
+        <span class="apple"></span> Pay
+      </button>
+      <button class="gpay-btn" onclick="payNow('Google Pay')">
+        <span style="font-weight:700">G Pay</span>
+      </button>
+
+      <div class="express-divider">ou payer par carte</div>
+
+      <div class="pay-method active" data-pm="cb" onclick="selectPm(this)">
+        <div class="radio"></div>
+        <span class="pm-name">Carte bancaire</span>
+        <span class="pm-logos">
+          <span class="lg" style="font-weight:800;color:#0066CC;font-style:italic">VISA</span>
+          <span class="lg" style="display:flex"><span style="width:16px;height:16px;border-radius:50%;background:#EB001B;display:inline-block"></span><span style="width:16px;height:16px;border-radius:50%;background:#F79E1B;display:inline-block;margin-left:-7px"></span></span>
+        </span>
+      </div>
+
+      <div class="summary">
+        <div id="recapList"></div>
+      </div>
+      <div id="payReminder"></div>
+      <div class="summary">
+        <div class="summary-row"><span>Sous-total</span><span class="v" id="sumSub">0,00 €</span></div>
+        <div class="summary-row"><span>Dont TVA (incluse)</span><span class="v" id="sumTva">0,00 €</span></div>
+        <div class="summary-row total"><span>Total</span><span class="v" id="sumTotal">0,00 €</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SUCCESS ============ -->
+    <section class="screen" id="sOk">
+      <div class="success-wrap">
+        <div class="success-ring"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <h1 class="title" style="text-align:center">C'est validé !</h1>
+        <p class="subtitle" id="okMsg">Votre e-billet a été envoyé.</p>
+
+        <div class="eticket">
+          <div class="et-label">E-BILLET RHÔNEXPRESS</div>
+          <div class="et-name" id="okTicket">Aller Simple</div>
+          <div class="et-route">
+            <span>Lyon Part-Dieu</span>
+            <span class="arrow"></span>
+            <span>St-Exupéry</span>
+          </div>
+          <div class="et-qr">
+            <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff"/>
+              <g fill="#1E1B2E">
+                <rect x="6" y="6" width="26" height="26"/><rect x="12" y="12" width="14" height="14" fill="#fff"/><rect x="16" y="16" width="6" height="6" fill="#1E1B2E"/>
+                <rect x="68" y="6" width="26" height="26"/><rect x="74" y="12" width="14" height="14" fill="#fff"/><rect x="78" y="16" width="6" height="6" fill="#1E1B2E"/>
+                <rect x="6" y="68" width="26" height="26"/><rect x="12" y="74" width="14" height="14" fill="#fff"/><rect x="16" y="78" width="6" height="6" fill="#1E1B2E"/>
+                <rect x="40" y="6" width="6" height="6"/><rect x="52" y="6" width="6" height="6"/><rect x="40" y="18" width="6" height="6"/><rect x="58" y="12" width="6" height="6"/>
+                <rect x="6" y="40" width="6" height="6"/><rect x="18" y="40" width="6" height="6"/><rect x="30" y="46" width="6" height="6"/><rect x="42" y="40" width="6" height="6"/><rect x="54" y="40" width="6" height="6"/><rect x="66" y="40" width="6" height="6"/><rect x="78" y="40" width="6" height="6"/><rect x="88" y="46" width="6" height="6"/>
+                <rect x="40" y="54" width="6" height="6"/><rect x="52" y="58" width="6" height="6"/><rect x="64" y="54" width="6" height="6"/><rect x="76" y="60" width="6" height="6"/><rect x="88" y="66" width="6" height="6"/>
+                <rect x="40" y="68" width="6" height="6"/><rect x="48" y="76" width="6" height="6"/><rect x="60" y="70" width="6" height="6"/><rect x="72" y="78" width="6" height="6"/><rect x="84" y="84" width="6" height="6"/>
+                <rect x="40" y="88" width="6" height="6"/><rect x="54" y="88" width="6" height="6"/><rect x="66" y="88" width="6" height="6"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <button class="wallet-btn" id="walletBtn" onclick="addToWallet()">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M19 5H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3zm-2.5 9a1.5 1.5 0 0 1-1.5 1.5H9A1.5 1.5 0 0 1 7.5 14v-1h9z"/><path d="M2 9.5h20" stroke="#000" stroke-width="1"/></svg>
+          Ajouter à Apple Wallet
+        </button>
+        <p style="font-size:13px;color:var(--ink-soft);margin-top:14px">Présentez ce QR code à bord. Valable immédiatement.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- STICKY CTA -->
+  <div class="cta-bar" id="ctaBar">
+    <div class="cta-total"><span>Total</span><b id="ctaTotal">0,00 €</b></div>
+    <button class="btn btn-primary" id="ctaBtn" onclick="next()" disabled>
+      Continuer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+/* ---------- DATA ---------- */
+const TICKETS = {
+  standard:[
+    {id:'as', nm:'Aller Simple', price:16.00, type:'aller', tag:''},
+    {id:'ar', nm:'Aller Retour', price:28.00, type:'ar', tag:'best', tagTxt:'Le + choisi'},
+    {id:'ar4', nm:'Aller Retour 4h', desc:'Retour dans les 4 heures', price:18.90, type:'ar'},
+    {id:'10t', nm:'10 Trajets', desc:'Carnet rechargeable', price:140.00, type:'multi'},
+    {id:'asc', nm:'Aller + correspondance TER', desc:'Train gare St-Exupéry', price:10.50, type:'aller', corresp:true},
+    {id:'arc', nm:'A/R + correspondance TER', desc:'Train gare St-Exupéry', price:19.90, type:'ar', corresp:true},
+    {id:'10c', nm:'10 Trajets + corresp. TER', price:83.80, type:'multi', corresp:true},
+  ],
+  young:[
+    {id:'ya', nm:'Aller Simple', desc:'12–25 ans', price:10.50, type:'aller', tag:'young', tagTxt:'Tarif jeune'},
+    {id:'yar', nm:'Aller Retour', desc:'12–25 ans', price:19.90, type:'ar', tag:'young', tagTxt:'Tarif jeune'},
+    {id:'y10', nm:'10 Trajets', desc:'12–25 ans', price:84.00, type:'multi', tag:'young', tagTxt:'Tarif jeune'},
+  ],
+  salarie:[
+    {id:'sas', nm:'Aller Simple Salarié', desc:'Personnel St-Exupéry', price:2.80, type:'aller', tag:'best', tagTxt:'Tarif salarié'},
+    {id:'sar', nm:'Aller Retour Salarié', desc:'Personnel St-Exupéry', price:5.60, type:'ar', tag:'best', tagTxt:'Tarif salarié'},
+    {id:'s7', nm:'Pass 7 jours', desc:'Salarié — NET', price:20.60, type:'multi'},
+    {id:'s31', nm:'Pass 31 jours', desc:'Salarié — NET', price:68.40, type:'multi'},
+    {id:'s40', nm:'40 Trajets', desc:'Salarié — NET', price:82.80, type:'multi'},
+  ],
+  package:[
+    {id:'p1', nm:'A/R + LyonCityCard 1j', desc:'+ 1 pass TCL 24h', price:57.00, type:'ar', tag:'young', tagTxt:'Tourisme'},
+    {id:'p2', nm:'A/R + LyonCityCard 2j', desc:'+ 1 pass TCL 48h', price:67.00, type:'ar', tag:'young', tagTxt:'Tourisme'},
+    {id:'p3', nm:'A/R + LyonCityCard 3j', desc:'+ 1 pass TCL 72h', price:77.00, type:'ar', tag:'young', tagTxt:'Tourisme'},
+    {id:'p4', nm:'A/R + LyonCityCard 4j', desc:'+ 2 pass TCL 48h', price:87.00, type:'ar', tag:'young', tagTxt:'Tourisme'},
+  ],
+};
+
+let state = {profile:'standard', trip:'all', cart:{}, step:1, pm:'cb'};
+
+/* ---------- RENDER TICKETS ---------- */
+function fmt(n){return n.toFixed(2).replace('.',',')+' €';}
+
+function renderTickets(){
+  // profile-level justificatif notice
+  const notices = {
+    young:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+           <span><b>Tarif 12–25 ans :</b> une pièce d'identité (avec date de naissance) sera demandée à bord. Sans justificatif, le billet n'est pas valable.</span>`,
+    salarie:`<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h7"/></svg>
+           <span><b>Tarif salarié St-Exupéry :</b> présentez votre <b>carte salarié délivrée par Rhônexpress</b> à bord. Aucun autre badge n'est accepté.</span>`,
+  };
+  const pn = document.getElementById('profileNotice');
+  pn.innerHTML = notices[state.profile] ? `<div class="notice">${notices[state.profile]}</div>` : '';
+
+  const list = TICKETS[state.profile].filter(t=>state.trip==='all'||t.type===state.trip);
+  const el = document.getElementById('ticketList');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="big">🤷</div>Aucun billet pour ce filtre.</div>';return;}
+  el.innerHTML = list.map(t=>{
+    const q = state.cart[t.id]?.qty||0;
+    const tag = t.tag?`<span class="tag ${t.tag}">${t.tagTxt}</span><br>`:'';
+    const correspNote = t.corresp?`<div class="ticket-note">
+        <svg viewBox="0 0 24 24"><path d="M12 2L4 7v5c0 5 3.5 8 8 10 4.5-2 8-5 8-10V7z"/></svg>
+        <span>Justificatif de train (billet TER/TGV) à présenter, au <b>départ ou à l'arrivée</b> de la gare St-Exupéry.</span>
+      </div>`:'';
+    return `<div class="ticket ${q>0?'selected':''}" id="tk-${t.id}">
+      <div class="info">
+        ${tag}
+        <div class="nm">${t.nm}</div>
+        ${t.desc?`<div class="desc">${t.desc}</div>`:''}
+        <div class="price">${fmt(t.price)}</div>
+        ${correspNote}
+      </div>
+      <div class="qty">
+        <button class="minus" onclick="dec('${t.id}')" ${q===0?'disabled':''}>−</button>
+        <span class="val">${q}</span>
+        <button onclick="inc('${t.id}')">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function findTicket(id){
+  for(const p in TICKETS){const f=TICKETS[p].find(t=>t.id===id);if(f)return f;}
+}
+function inc(id){const t=findTicket(id);state.cart[id]=state.cart[id]||{...t,qty:0};state.cart[id].qty++;renderTickets();updateTotals();}
+function dec(id){if(state.cart[id]){state.cart[id].qty--;if(state.cart[id].qty<=0)delete state.cart[id];}renderTickets();updateTotals();}
+
+/* ---------- TOTALS ---------- */
+function cartTotal(){return Object.values(state.cart).reduce((s,i)=>s+i.price*i.qty,0);}
+function cartCount(){return Object.values(state.cart).reduce((s,i)=>s+i.qty,0);}
+
+function updateTotals(){
+  const tot=cartTotal(), cnt=cartCount();
+  document.getElementById('ctaTotal').textContent=fmt(tot);
+  document.getElementById('cartBadge').textContent=cnt;
+  document.getElementById('cartBadge').style.display=cnt>0?'grid':'none';
+  // CTA enable logic per step
+  const btn=document.getElementById('ctaBtn');
+  if(state.step===1) btn.disabled = cnt===0;
+  if(state.step===2) btn.disabled = !(document.getElementById('email').value.includes('@') && document.getElementById('cgu').checked);
+}
+
+/* ---------- PROFILE / TRIP FILTERS ---------- */
+document.getElementById('profile').addEventListener('click',e=>{
+  if(e.target.dataset.p){
+    document.querySelectorAll('#profile button').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');state.profile=e.target.dataset.p;renderTickets();
+  }
+});
+document.getElementById('tripType').addEventListener('click',e=>{
+  const p=e.target.closest('.pill');if(!p)return;
+  document.querySelectorAll('#tripType .pill').forEach(b=>b.classList.remove('active'));
+  p.classList.add('active');state.trip=p.dataset.t;renderTickets();
+});
+
+/* ---------- STEP NAV ---------- */
+function showStep(n){
+  state.step=n;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById('s'+n).classList.add('on');
+  // stepper
+  document.querySelectorAll('#stepper .seg').forEach(seg=>{
+    const st=+seg.dataset.step;seg.classList.remove('active','done');
+    if(st<n)seg.classList.add('done');else if(st===n)seg.classList.add('active');
+  });
+  const btn=document.getElementById('ctaBtn');
+  if(n===1){btn.innerHTML='Continuer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';}
+  if(n===2){btn.innerHTML='Aller au paiement <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';}
+  if(n===3){buildRecap();}
+  // CTA bar only shows on steps 1 and 2
+  document.getElementById('ctaBar').style.display=(n===1||n===2)?'flex':'none';
+  window.scrollTo(0,0);
+  updateTotals();
+}
+
+function next(){
+  if(state.step===1 && cartCount()>0) showStep(2);
+  else if(state.step===2) showStep(3);
+}
+function goCart(){ if(cartCount()>0) showStep(state.step===1?2:state.step); }
+
+/* ---------- PAYMENT ---------- */
+function selectPm(el){
+  document.querySelectorAll('.pay-method').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');state.pm=el.dataset.pm;
+}
+function buildRecap(){
+  const items=Object.values(state.cart);
+  document.getElementById('recapList').innerHTML=items.map(i=>
+    `<div class="recap-item"><div><div class="ri-name">${i.nm}</div><div class="ri-qty">Quantité : ${i.qty}</div></div><div style="font-weight:700">${fmt(i.price*i.qty)}</div></div>`
+  ).join('');
+
+  // justificatif reminders based on what's in the cart
+  const reminders=[];
+  if(state.profile==='young') reminders.push("Pièce d'identité (12–25 ans) à présenter à bord.");
+  if(state.profile==='salarie') reminders.push('Carte salarié Rhônexpress à présenter à bord.');
+  if(items.some(i=>i.corresp)) reminders.push("Justificatif de train à présenter au départ ou à l'arrivée de St-Exupéry.");
+  const rem=document.getElementById('payReminder');
+  rem.innerHTML = reminders.length
+    ? `<div class="notice" style="margin-bottom:0">
+         <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+         <span><b>À ne pas oublier à bord :</b><br>${reminders.map(r=>'• '+r).join('<br>')}</span>
+       </div>` : '';
+
+  const tot=cartTotal();
+  document.getElementById('sumSub').textContent=fmt(tot);
+  document.getElementById('sumTva').textContent=fmt(tot*0.0909);
+  document.getElementById('sumTotal').textContent=fmt(tot);
+}
+function payNow(method){
+  const items=Object.values(state.cart);
+  document.getElementById('okTicket').textContent=items.length===1?items[0].nm:cartCount()+' billets';
+  document.getElementById('okMsg').textContent='Payé via '+method+'. Votre e-billet a été envoyé.';
+  showStep('Ok');
+  document.getElementById('stepper').style.display='none';
+  document.querySelector('.step-labels').style.display='none';
+}
+
+function addToWallet(){
+  const b=document.getElementById('walletBtn');
+  b.outerHTML='<div class="wallet-done"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Ajouté à Apple Wallet</div>';
+}
+
+/* live validation on step 2 */
+['email','cgu'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',updateTotals);
+  document.getElementById(id).addEventListener('change',updateTotals);
+});
+
+/* INIT */
+renderTickets();updateTotals();
+</script>
+</body>
+</html>
